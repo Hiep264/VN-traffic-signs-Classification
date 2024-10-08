@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Prediction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 50px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        #dropZone {
+            border: 2px dashed #cccccc;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            color: #cccccc;
+            font-size: 18px;
+            cursor: pointer;
+            transition: border 0.2s ease-in-out;
+        }
+        #dropZone.hover {
+            border-color: #0066cc;
+        }
+        img {
+            max-width: 100%;
+            margin: 20px 0;
+        }
+        #prediction {
+            font-size: 20px;
+            font-weight: bold;
+            color: blue;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Drag and Drop Image for Prediction</h1>
+
+        <!-- Khu vực thả ảnh -->
+        <div id="dropZone">Drag & Drop image here or click to select</div>
+
+        <h2>Uploaded Image:</h2>
+        <img id="uploadedImage" src="" alt="Image will appear here after upload" />
+
+        <h2>Prediction:</h2>
+        <div id="prediction">Prediction will appear here...</div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const uploadedImage = document.getElementById('uploadedImage');
+        let selectedFile = null;
+
+        // Khi người dùng kéo file vào dropZone
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('hover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('hover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('hover');
+
+            // Lấy file đầu tiên từ danh sách kéo thả
+            selectedFile = e.dataTransfer.files[0];
+            handleFile(selectedFile);
+        });
+
+        // Cho phép click vào khu vực để chọn file
+        dropZone.addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.click();
+
+            input.onchange = (e) => {
+                selectedFile = e.target.files[0];
+                handleFile(selectedFile);
+            };
+        });
+
+        function handleFile(file) {
+            if (!file) {
+                alert("Please upload an image file.");
+                return;
+            }
+
+            // Hiển thị ảnh đã chọn
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                uploadedImage.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+
+            sendImageToPredict(file);
+        }
+
+        async function sendImageToPredict(file) {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    document.getElementById('prediction').innerText = `Prediction: ${result.predicted_class_label}`;
+                } else {
+                    document.getElementById('prediction').innerText = "Error occurred during prediction.";
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('prediction').innerText = "Error occurred during prediction.";
+            }
+        }
+    </script>
+</body>
+</html>
